@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>离线视频播放器</title>
+<style>
+body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+#videoList button { margin-left: 10px; }
+video { width: 100%; max-height: 400px; background: #000; margin-top: 10px; }
+</style>
+</head>
+<body>
+<h2>离线视频播放器</h2>
+
+<input type="file" accept="video/*" id="fileInput">
+<button onclick="upload()">上传视频</button>
+
+<h3>视频列表</h3>
+<ul id="videoList"></ul>
+
+<video id="player" controls></video>
+
+<script>
+let db;
+let request = indexedDB.open("videoDB", 1);
+request.onupgradeneeded = function () {
+    db = request.result;
+    db.createObjectStore("videos", { keyPath: "name" });
+};
+request.onsuccess = function () {
+    db = request.result;
+    loadVideos();
+};
+
+function upload() {
+    let file = document.getElementById("fileInput").files[0];
+    if (!file) return;
+    let reader = new FileReader();
+    reader.readAsArrayBuffer(file);
+    reader.onload = function () {
+        let tx = db.transaction("videos", "readwrite");
+        tx.objectStore("videos").put({ name: file.name, data: reader.result });
+        tx.oncomplete = loadVideos;
+    };
+}
+
+function loadVideos() {
+    let list = document.getElementById("videoList");
+    list.innerHTML = "";
+    let tx = db.transaction("videos", "readonly");
+    tx.objectStore("videos").getAll().onsuccess = function (e) {
+        e.target.result.forEach(v => {
+            let li = document.createElement("li");
+            li.textContent = v.name;
+            li.onclick = () => play(v);
+            let del = document.createElement("button");
+            del.textContent = "删除";
+            del.onclick = ev => { ev.stopPropagation(); deleteVideo(v.name); };
+            li.appendChild(del);
+            list.appendChild(li);
+        });
+    };
+}
+
+function play(v) {
+    let blob = new Blob([v.data], { type: "video/mp4" });
+    document.getElementById("player").src = URL.createObjectURL(blob);
+}
+
+function deleteVideo(name) {
+    db.transaction("videos", "readwrite")
+      .objectStore("videos").delete(name).onsuccess = loadVideos;
+}
+</script>
+</body>
+</html>
