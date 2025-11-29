@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>增强版离线多媒体播放器</title>
+<style>
+body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; color: #333; }
+.dark { background: #1e1e1e; color: #ddd; }
+h2, h3 { margin-bottom: 10px; }
+#controls { margin-bottom: 15px; }
+#videoList, #audioList, #imageList, #textList { list-style: none; padding-left: 0; max-height: 200px; overflow-y: auto; margin-bottom: 15px; }
+li { margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; }
+li img { width: 80px; height: 45px; margin-right: 10px; object-fit: cover; }
+button { margin-left: auto; padding: 5px; cursor: pointer; }
+video, audio { width: 100%; max-height: 400px; background: #000; margin-top: 10px; display: block; }
+textarea { width: 100%; height: 100px; margin-top: 10px; }
+</style>
+</head>
+<body>
+<h2>增强版离线多媒体播放器</h2>
+
+<div id="controls">
+<h3>上传文件</h3>
+<input type="file" id="fileInput" accept="video/*,audio/*,image/*,text/plain" multiple>
+<button onclick="upload()">上传</button>
+<input type="text" id="searchInput" placeholder="搜索文件" oninput="loadAll()">
+<button onclick="toggleTheme()">切换夜间模式</button>
+</div>
+
+<h3>视频列表</h3>
+<ul id="videoList"></ul>
+<video id="player" controls></video>
+
+<h3>音频列表</h3>
+<ul id="audioList"></ul>
+<audio id="audioPlayer" controls></audio>
+
+<h3>图片列表</h3>
+<ul id="imageList"></ul>
+<img id="imageViewer" style="max-width:100%; margin-top:10px;">
+
+<h3>文本列表</h3>
+<ul id="textList"></ul>
+<textarea id="textViewer" readonly></textarea>
+
+<script>
+let db;
+let request = indexedDB.open("multiMediaDB", 1);
+
+request.onupgradeneeded = function () {
+    db = request.result;
+    ["videos","audios","images","texts"].forEach(store => db.createObjectStore(store, { keyPath: "name" }));
+};
+
+request.onsuccess = function () {
+    db = request.result;
+    loadAll();
+};
+
+function upload() {
+    let files = document.getElementById("fileInput").files;
+    if (!files.length) return;
+    Array.from(files).forEach(file => {
+        let reader = new FileReader();
+        reader.onload = function() {
+            let type = "texts";
+            if(file.type.startsWith("video")) type = "videos";
+            else if(file.type.startsWith("audio")) type = "audios";
+            else if(file.type.startsWith("image")) type = "images";
+            let tx = db.transaction(type, "readwrite");
+            tx.objectStore(type).put({ name:file.name, data:reader.result, type:file.type });
+            tx.oncomplete = loadAll;
+        };
+        if(file.type.startsWith("text")) reader.readAsText(file);
+        else reader.readAsArrayBuffer(file);
+    });
+}
+
+// ------------------- 加载和显示 -------------------
+function loadAll() {
+    loadList("videos", "videoList", displayVideo);
+    loadList("audios", "audioList", displayAudio);
+    loadList("images", "imageList", displayImage);
+    loadList("texts", "textList", displayText);
+}
+
+function loadList(storeName, listId, displayFn) {
+    let search = document.getElementById("searchInput").value.toLowerCase();
+    let list = document.getElementById(listId);
+    list.innerHTML = "";
+    let tx = db.transaction(storeName, "readonly");
+    tx.objectStore(storeName).getAll().onsuccess = function(e){
+        e.target.result.filter(f => f.name.toLowerCase().includes(search)).forEach(displayFn);
+    }
+}
+
+// ------------------- 视频 -------------------
+function displayVideo(v) {
+    let li = document.createElement("li");
+    let blob = new Blob([v.data], {type:"video/mp4"});
+    let videoTmp = document.createElement("video");
+    videoTmp.src = URL.createObjectURL(blob);
+    let img = document.createElement("img");
+    videoTmp.onloadeddata = () => {
+        let canvas=document.createElement("canvas"); canvas.width=160; canvas.height=90;
+        canvas.getContext("2d").drawImage(videoTmp,0,0,160,90);
+        img.src = canvas.toDataURL();
+    };
+    li.appendChild(img);
+    let text = document.createElement("span"); text.textContent = v.name;
+    li.appendChild(text);
+    li.onclick = () => playVideo(v);
+    let del = document.createElement("button"); del.textContent="删除";
+    del.onclick=ev=>{ev.stopPropagation(); deleteFile("videos",v.name);}
+    li.appendChild(del);
+    document.getElementById("videoList").appendChild(li);
+}
+
+function playVideo(v){
+    let blob = new Blob([v.data],{type:"video/mp4"});
+    let player = document.getElementById("player");
+    player.src = URL.createObjectURL(blob);
+    let savedTime = localStorage.getItem(v.name);
+    if(savedTime) player.currentTime=parseFloat(savedTime);
+    player.ontimeupdate=()=>{localStorage.setItem(v.name, player.currentTime);}
+}
+
+// ------------------- 音频 -------------------
+function displayAudio(a){
+    let li=document.createElement("li");
+    li.textContent=a.name;
+    li.onclick=()=>playAudio(a);
+    let del=document.createElement("button"); del.textContent="删除";
+    del.onclick=ev=>{ev.stopPropagation(); deleteFile("audios",a.name);}
+    li.appendChild(del);
+    document.getElementById("audioList").appendChild(li);
+}
+
+function playAudio(a){
+    let blob=new Blob([a.data],{type:a.type});
+    let player=document.getElementById("audioPlayer");
+    player.src=URL.createObjectURL(blob);
+    player.play();
+}
+
+// ------------------- 图片 -------------------
+function displayImage(img){
+    let li=document.createElement("li");
+    li.textContent=img.name;
+    li.onclick=()=>viewImage(img);
+    let del=document.createElement("button"); del.textContent="删除";
+    del.onclick=ev=>{ev.stopPropagation(); deleteFile("images",img.name);}
+    li.appendChild(del);
+    document.getElementById("imageList").appendChild(li);
+}
+
+function viewImage(img){
+    let blob=new Blob([img.data],{type:img.type});
+    document.getElementById("imageViewer").src=URL.createObjectURL(blob);
+}
+
+// ------------------- 文本 -------------------
+function displayText(t){
+    let li=document.createElement("li");
+    li.textContent=t.name;
+    li.onclick=()=>viewText(t);
+    let del=document.createElement("button"); del.textContent="删除";
+    del.onclick=ev=>{ev.stopPropagation(); deleteFile("texts",t.name);}
+    li.appendChild(del);
+    document.getElementById("textList").appendChild(li);
+}
+
+function viewText(t){
+    document.getElementById("textViewer").value=t.data;
+}
+
+// ------------------- 删除 -------------------
+function deleteFile(store,name){
+    db.transaction(store,"readwrite").objectStore(store).delete(name).onsuccess=loadAll;
+}
+
+// ------------------- 夜间模式 -------------------
+function toggleTheme(){ document.body.classList.toggle("dark"); }
+</script>
+</body>
+</html>
