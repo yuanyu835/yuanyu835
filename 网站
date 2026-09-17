@@ -1,186 +1,45 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<title>增强版离线多媒体播放器</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>课栈 · 我的课表</title>
 <style>
-body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; color: #333; }
-.dark { background: #1e1e1e; color: #ddd; }
-h2, h3 { margin-bottom: 10px; }
-#controls { margin-bottom: 15px; }
-#videoList, #audioList, #imageList, #textList { list-style: none; padding-left: 0; max-height: 200px; overflow-y: auto; margin-bottom: 15px; }
-li { margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; }
-li img { width: 80px; height: 45px; margin-right: 10px; object-fit: cover; }
-button { margin-left: auto; padding: 5px; cursor: pointer; }
-video, audio { width: 100%; max-height: 400px; background: #000; margin-top: 10px; display: block; }
-textarea { width: 100%; height: 100px; margin-top: 10px; }
+  :root { --ink:#17213a; --muted:#7e899f; --line:#e8ecf4; --paper:#fff; --bg:#f5f7fb; --blue:#4d6bff; --purple:#8467f6; --pink:#ed6b9d; --green:#28a987; --orange:#f09d56; }
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;color:var(--ink)}
+  .shell{max-width:1440px;margin:auto;padding:30px 38px 38px}.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:26px}.brand{display:flex;align-items:center;gap:12px;font-weight:800;font-size:23px;letter-spacing:.5px}.brand-mark{width:39px;height:39px;border-radius:13px;background:linear-gradient(135deg,#5e7dff,#8d72f7);display:grid;place-items:center;color:white;box-shadow:0 8px 17px #7889d855}.brand-mark:after{content:"⌁";font-size:27px;font-weight:400;transform:rotate(-12deg)}
+  .top-actions{display:flex;gap:12px;align-items:center}.week-chip,.icon-btn,.primary{border:0;background:white;height:42px;border-radius:12px;padding:0 15px;color:var(--ink);font:inherit;cursor:pointer;box-shadow:0 2px 8px #2730500c}.week-chip{font-size:13px;color:#59657b}.icon-btn{width:42px;padding:0;font-size:19px}.primary{background:var(--blue);color:white;font-weight:700;box-shadow:0 8px 17px #4d6bff38;display:flex;align-items:center;gap:7px}
+  .hero{background:linear-gradient(110deg,#586ff6,#7c63ef 65%,#9678f4);min-height:176px;border-radius:24px;color:white;padding:29px 35px;display:flex;justify-content:space-between;position:relative;overflow:hidden}.hero:after{content:"";position:absolute;width:290px;height:290px;border:48px solid #ffffff13;border-radius:50%;right:-66px;top:-120px}.hero h1{margin:0 0 11px;font-size:27px}.hero p{margin:0;color:#edf0ff;font-size:14px}.today{position:relative;z-index:1;text-align:right}.today strong{font-size:42px;display:block;line-height:1}.today span{font-size:13px;color:#e7e8ff;display:block;margin-top:10px}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:17px;margin:22px 0}.stat{background:var(--paper);border-radius:18px;padding:18px 21px;display:flex;align-items:center;gap:14px;box-shadow:0 3px 12px #2730500a}.stat-icon{width:43px;height:43px;border-radius:13px;display:grid;place-items:center;font-size:20px}.stat:nth-child(1) .stat-icon{background:#edf0ff}.stat:nth-child(2) .stat-icon{background:#e7f8f3}.stat:nth-child(3) .stat-icon{background:#fff0e9}.stat small{display:block;color:var(--muted);font-size:12px;margin-bottom:5px}.stat b{font-size:20px}
+  .content{background:white;border-radius:22px;padding:24px;box-shadow:0 3px 14px #2730500a}.schedule-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:19px}.schedule-head h2{font-size:18px;margin:0}.legend{display:flex;gap:12px;font-size:12px;color:var(--muted)}.dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px}.grid-wrap{overflow-x:auto}.schedule{min-width:880px;display:grid;grid-template-columns:68px repeat(5,1fr);border:1px solid var(--line);border-radius:15px;overflow:hidden}.cell{min-height:88px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px}.schedule>*:nth-child(6n){border-right:0}.schedule>*:nth-last-child(-n+6){border-bottom:0}.day-head{min-height:57px;padding:12px 8px;text-align:center;background:#fbfcff;font-size:13px;font-weight:700}.day-head span{display:block;color:#9ba5b9;font-size:11px;font-weight:400;margin-top:4px}.day-head.today-head{color:var(--blue);background:#f5f6ff}.period{background:#fbfcff;text-align:center;padding-top:13px;color:#919bb0;font-size:11px;line-height:1.55}.period b{color:#536078;font-size:13px}.class-card{border-left:4px solid;border-radius:8px;padding:7px 8px;height:100%;cursor:pointer;transition:.16s;background:#f7f8ff}.class-card:hover{transform:translateY(-2px);box-shadow:0 5px 12px #2330501a}.class-card b{display:block;font-size:12px;line-height:1.38}.class-card span{font-size:10px;color:#69758d;display:block;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.empty{color:#c6cdda;text-align:center;padding-top:29px;font-size:18px;cursor:pointer}.empty:hover{background:#fafbfe;color:var(--blue)}
+  dialog{border:0;border-radius:20px;padding:0;width:min(450px,calc(100% - 32px));box-shadow:0 20px 60px #17213a44}dialog::backdrop{background:#14204466}.modal{padding:25px}.modal h3{margin:0 0 21px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field{display:flex;flex-direction:column;gap:7px;font-size:12px;color:#68738a}.field.full{grid-column:1/-1}.field input,.field select{border:1px solid #dde3ef;border-radius:10px;padding:10px;font:inherit;color:var(--ink);outline:none}.field input:focus,.field select:focus{border-color:var(--blue)}.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:23px}.cancel,.save{border:0;border-radius:10px;padding:10px 17px;font:inherit;cursor:pointer}.cancel{background:#f0f3f8;color:#59657a}.save{background:var(--blue);color:white}
+  @media(max-width:700px){.shell{padding:20px 15px}.topbar{margin-bottom:18px}.top-actions .week-chip,.top-actions .icon-btn{display:none}.hero{padding:25px;min-height:153px}.today strong{font-size:31px}.stats{gap:9px}.stat{padding:13px}.stat-icon{display:none}.content{padding:14px}.legend{display:none}.top-actions .primary{font-size:13px;padding:0 11px}}
 </style>
 </head>
 <body>
-<h2>增强版离线多媒体播放器</h2>
-
-<div id="controls">
-<h3>上传文件</h3>
-<input type="file" id="fileInput" accept="video/*,audio/*,image/*,text/plain" multiple>
-<button onclick="upload()">上传</button>
-<input type="text" id="searchInput" placeholder="搜索文件" oninput="loadAll()">
-<button onclick="toggleTheme()">切换夜间模式</button>
-</div>
-
-<h3>视频列表</h3>
-<ul id="videoList"></ul>
-<video id="player" controls></video>
-
-<h3>音频列表</h3>
-<ul id="audioList"></ul>
-<audio id="audioPlayer" controls></audio>
-
-<h3>图片列表</h3>
-<ul id="imageList"></ul>
-<img id="imageViewer" style="max-width:100%; margin-top:10px;">
-
-<h3>文本列表</h3>
-<ul id="textList"></ul>
-<textarea id="textViewer" readonly></textarea>
-
+<main class="shell">
+  <header class="topbar"><div class="brand"><i class="brand-mark"></i>课栈</div><div class="top-actions"><button class="week-chip">2026 春季学期　⌄</button><button class="icon-btn" id="themeBtn" title="切换主题">☾</button><button class="primary" id="addBtn">＋ 添加课程</button></div></header>
+  <section class="hero"><div><h1 id="greeting">下午好，继续保持学习节奏！</h1><p id="heroText">今天有 2 节课，下一节课是「数据结构」。</p></div><div class="today"><strong id="dateNum">17</strong><span id="dateText">星期四 · 9月</span></div></section>
+  <section class="stats"><div class="stat"><div class="stat-icon">▣</div><div><small>本周课程</small><b id="weekCount">0 节</b></div></div><div class="stat"><div class="stat-icon">◷</div><div><small>本周学时</small><b id="hoursCount">0 小时</b></div></div><div class="stat"><div class="stat-icon">✓</div><div><small>今日课程</small><b id="todayCount">0 节</b></div></div></section>
+  <section class="content"><div class="schedule-head"><h2>我的课程表</h2><div class="legend"><span><i class="dot" style="background:#4d6bff"></i>专业课</span><span><i class="dot" style="background:#28a987"></i>通识课</span><span><i class="dot" style="background:#f09d56"></i>实践课</span></div></div><div class="grid-wrap"><div class="schedule" id="schedule"></div></div></section>
+</main>
+<dialog id="courseDialog"><form class="modal" id="courseForm"><h3 id="modalTitle">添加课程</h3><div class="form-grid"><label class="field full">课程名称<input required id="courseName" placeholder="例如：高等数学"></label><label class="field">星期<select id="courseDay"><option value="1">星期一</option><option value="2">星期二</option><option value="3">星期三</option><option value="4">星期四</option><option value="5">星期五</option></select></label><label class="field">节次<select id="coursePeriod"><option value="1">第 1 - 2 节</option><option value="2">第 3 - 4 节</option><option value="3">第 5 - 6 节</option><option value="4">第 7 - 8 节</option></select></label><label class="field">上课地点<input id="courseRoom" placeholder="教学楼 / 教室"></label><label class="field">授课教师<input id="courseTeacher" placeholder="教师姓名"></label><label class="field full">课程类型<select id="courseColor"><option value="#4d6bff">专业课</option><option value="#28a987">通识课</option><option value="#f09d56">实践课</option><option value="#ed6b9d">选修课</option></select></label></div><div class="modal-actions"><button type="button" class="cancel" id="cancelBtn">取消</button><button class="save">保存课程</button></div></form></dialog>
 <script>
-let db;
-let request = indexedDB.open("multiMediaDB", 1);
-
-request.onupgradeneeded = function () {
-    db = request.result;
-    ["videos","audios","images","texts"].forEach(store => db.createObjectStore(store, { keyPath: "name" }));
-};
-
-request.onsuccess = function () {
-    db = request.result;
-    loadAll();
-};
-
-function upload() {
-    let files = document.getElementById("fileInput").files;
-    if (!files.length) return;
-    Array.from(files).forEach(file => {
-        let reader = new FileReader();
-        reader.onload = function() {
-            let type = "texts";
-            if(file.type.startsWith("video")) type = "videos";
-            else if(file.type.startsWith("audio")) type = "audios";
-            else if(file.type.startsWith("image")) type = "images";
-            let tx = db.transaction(type, "readwrite");
-            tx.objectStore(type).put({ name:file.name, data:reader.result, type:file.type });
-            tx.oncomplete = loadAll;
-        };
-        if(file.type.startsWith("text")) reader.readAsText(file);
-        else reader.readAsArrayBuffer(file);
-    });
-}
-
-// ------------------- 加载和显示 -------------------
-function loadAll() {
-    loadList("videos", "videoList", displayVideo);
-    loadList("audios", "audioList", displayAudio);
-    loadList("images", "imageList", displayImage);
-    loadList("texts", "textList", displayText);
-}
-
-function loadList(storeName, listId, displayFn) {
-    let search = document.getElementById("searchInput").value.toLowerCase();
-    let list = document.getElementById(listId);
-    list.innerHTML = "";
-    let tx = db.transaction(storeName, "readonly");
-    tx.objectStore(storeName).getAll().onsuccess = function(e){
-        e.target.result.filter(f => f.name.toLowerCase().includes(search)).forEach(displayFn);
-    }
-}
-
-// ------------------- 视频 -------------------
-function displayVideo(v) {
-    let li = document.createElement("li");
-    let blob = new Blob([v.data], {type:"video/mp4"});
-    let videoTmp = document.createElement("video");
-    videoTmp.src = URL.createObjectURL(blob);
-    let img = document.createElement("img");
-    videoTmp.onloadeddata = () => {
-        let canvas=document.createElement("canvas"); canvas.width=160; canvas.height=90;
-        canvas.getContext("2d").drawImage(videoTmp,0,0,160,90);
-        img.src = canvas.toDataURL();
-    };
-    li.appendChild(img);
-    let text = document.createElement("span"); text.textContent = v.name;
-    li.appendChild(text);
-    li.onclick = () => playVideo(v);
-    let del = document.createElement("button"); del.textContent="删除";
-    del.onclick=ev=>{ev.stopPropagation(); deleteFile("videos",v.name);}
-    li.appendChild(del);
-    document.getElementById("videoList").appendChild(li);
-}
-
-function playVideo(v){
-    let blob = new Blob([v.data],{type:"video/mp4"});
-    let player = document.getElementById("player");
-    player.src = URL.createObjectURL(blob);
-    let savedTime = localStorage.getItem(v.name);
-    if(savedTime) player.currentTime=parseFloat(savedTime);
-    player.ontimeupdate=()=>{localStorage.setItem(v.name, player.currentTime);}
-}
-
-// ------------------- 音频 -------------------
-function displayAudio(a){
-    let li=document.createElement("li");
-    li.textContent=a.name;
-    li.onclick=()=>playAudio(a);
-    let del=document.createElement("button"); del.textContent="删除";
-    del.onclick=ev=>{ev.stopPropagation(); deleteFile("audios",a.name);}
-    li.appendChild(del);
-    document.getElementById("audioList").appendChild(li);
-}
-
-function playAudio(a){
-    let blob=new Blob([a.data],{type:a.type});
-    let player=document.getElementById("audioPlayer");
-    player.src=URL.createObjectURL(blob);
-    player.play();
-}
-
-// ------------------- 图片 -------------------
-function displayImage(img){
-    let li=document.createElement("li");
-    li.textContent=img.name;
-    li.onclick=()=>viewImage(img);
-    let del=document.createElement("button"); del.textContent="删除";
-    del.onclick=ev=>{ev.stopPropagation(); deleteFile("images",img.name);}
-    li.appendChild(del);
-    document.getElementById("imageList").appendChild(li);
-}
-
-function viewImage(img){
-    let blob=new Blob([img.data],{type:img.type});
-    document.getElementById("imageViewer").src=URL.createObjectURL(blob);
-}
-
-// ------------------- 文本 -------------------
-function displayText(t){
-    let li=document.createElement("li");
-    li.textContent=t.name;
-    li.onclick=()=>viewText(t);
-    let del=document.createElement("button"); del.textContent="删除";
-    del.onclick=ev=>{ev.stopPropagation(); deleteFile("texts",t.name);}
-    li.appendChild(del);
-    document.getElementById("textList").appendChild(li);
-}
-
-function viewText(t){
-    document.getElementById("textViewer").value=t.data;
-}
-
-// ------------------- 删除 -------------------
-function deleteFile(store,name){
-    db.transaction(store,"readwrite").objectStore(store).delete(name).onsuccess=loadAll;
-}
-
-// ------------------- 夜间模式 -------------------
-function toggleTheme(){ document.body.classList.toggle("dark"); }
+const days=['一','二','三','四','五'], periods=['第 1 - 2 节','第 3 - 4 节','第 5 - 6 节','第 7 - 8 节'];
+const defaultCourses=[{id:1,name:'高等数学',day:1,period:1,room:'明理楼 201',teacher:'王老师',color:'#4d6bff'},{id:2,name:'大学英语',day:2,period:2,room:'博学楼 302',teacher:'李老师',color:'#28a987'},{id:3,name:'数据结构',day:4,period:2,room:'求真楼 405',teacher:'陈老师',color:'#4d6bff'},{id:4,name:'体育',day:4,period:4,room:'东区操场',teacher:'张老师',color:'#f09d56'},{id:5,name:'计算机网络',day:5,period:1,room:'求真楼 203',teacher:'刘老师',color:'#ed6b9d'}];
+let courses=JSON.parse(localStorage.getItem('class-schedule-courses')||'null')||defaultCourses, editing=null;
+const schedule=document.querySelector('#schedule'), dialog=document.querySelector('#courseDialog'), form=document.querySelector('#courseForm');
+function save(){localStorage.setItem('class-schedule-courses',JSON.stringify(courses))}
+function render(){schedule.innerHTML='<div class="day-head"></div>'+days.map((d,i)=>`<div class="day-head ${i+1===4?'today-head':''}">星期${d}<span>${['9/14','9/15','9/16','9/17','9/18'][i]}</span></div>`).join('');periods.forEach((p,pIndex)=>{schedule.insertAdjacentHTML('beforeend',`<div class="period"><b>${p.split(' ')[0]}</b><br>${p.split(' ')[1]}</div>`);for(let day=1;day<=5;day++){let c=courses.find(x=>x.day===day&&x.period===pIndex+1); schedule.insertAdjacentHTML('beforeend',c?`<div class="cell"><article class="class-card" data-id="${c.id}" style="border-color:${c.color};background:${c.color}12"><b>${c.name}</b><span>⌖ ${c.room||'待填写'}</span><span>${c.teacher||'待填写'}</span></article></div>`:`<div class="cell empty" data-day="${day}" data-period="${pIndex+1}">＋</div>`);}});document.querySelectorAll('.class-card').forEach(el=>el.onclick=()=>openEdit(+el.dataset.id));document.querySelectorAll('.empty').forEach(el=>el.onclick=()=>openAdd(+el.dataset.day,+el.dataset.period));updateStats()}
+function updateStats(){let n=courses.length;document.querySelector('#weekCount').textContent=n+' 节';document.querySelector('#hoursCount').textContent=(n*2)+' 小时';let today=courses.filter(x=>x.day===4).length;document.querySelector('#todayCount').textContent=today+' 节';document.querySelector('#heroText').textContent=`今天有 ${today} 节课，${today?'下一节课是「数据结构」。':'好好享受没有课程的时间。'}`}
+function fill(c){courseName.value=c?.name||'';courseDay.value=c?.day||1;coursePeriod.value=c?.period||1;courseRoom.value=c?.room||'';courseTeacher.value=c?.teacher||'';courseColor.value=c?.color||'#4d6bff'}
+function openAdd(day=1,period=1){editing=null;modalTitle.textContent='添加课程';fill({day,period});dialog.showModal();courseName.focus()}
+function openEdit(id){editing=courses.find(c=>c.id===id);modalTitle.textContent='编辑课程（点击保存更新）';fill(editing);dialog.showModal()}
+document.querySelector('#addBtn').onclick=()=>openAdd();document.querySelector('#cancelBtn').onclick=()=>dialog.close();
+form.onsubmit=e=>{e.preventDefault();let item={id:editing?.id||Date.now(),name:courseName.value.trim(),day:+courseDay.value,period:+coursePeriod.value,room:courseRoom.value.trim(),teacher:courseTeacher.value.trim(),color:courseColor.value};courses=courses.filter(c=>c.id!==item.id&&!(c.day===item.day&&c.period===item.period));courses.push(item);save();dialog.close();render()};
+document.querySelector('#themeBtn').onclick=()=>{document.body.classList.toggle('dark');document.querySelector('#themeBtn').textContent=document.body.classList.contains('dark')?'☀':'☾'};
+const style=document.createElement('style');style.textContent='.dark{--bg:#171b27;--paper:#222938;--ink:#eff3ff;--line:#344057}.dark .content,.dark .stat,.dark .week-chip,.dark .icon-btn{background:#222938}.dark .day-head,.dark .period{background:#1d2432}.dark .cell{border-color:#344057}.dark .class-card span{color:#aeb9cf}';document.head.append(style);
+const now=new Date();dateNum.textContent=now.getDate();dateText.textContent=`星期${'日一二三四五六'[now.getDay()]} · ${now.getMonth()+1}月`;render();
 </script>
 </body>
 </html>
